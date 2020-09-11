@@ -1,7 +1,17 @@
 const puppeteer = require('puppeteer');
+const generateTextContent = require('./generateTextContent');
 
-const ParseDictPage = async (word) => {
-  let data;
+/**
+ * @arg {string} word word for check spelling and pronunciation
+ * @returns {Promise} string (query results)
+ */
+const checkOrtho = async (word) => {
+
+
+  let queryResult;
+  if (!word) {
+    return 'Пустой запрос.';
+  }
 
   const browser = await puppeteer.launch({
     args: ['--no-sandbox'],
@@ -12,39 +22,47 @@ const ParseDictPage = async (word) => {
 
   try {
     await page.goto(pageURL);
-    console.log(`Opening page: ${pageURL}`);
+    console.log(`Ищем '${word}'`);
 
-    const queryAnswer = await page.evaluate(() =>
-      document.querySelector('h2').nextElementSibling.textContent);
 
-    if (queryAnswer === 'Похожие слова:') {
+
+
+    const textContent = await page.evaluate(() => {
+      const header = document.querySelector('h2');
+      if (header) {
+        return header.nextElementSibling.textContent;
+      }
+      return false;
+    });
+
+    if (!textContent) {
+      queryResult = 'Извините, слово не найдено.';
+    } else if (textContent === 'Похожие слова:') {
 
       const proposalText = await page.evaluate(() => {
         const parentDiv = document.querySelector('.inside.block-content');
         const ps = parentDiv.querySelectorAll('p');
-        return ps[ps.length - 1].textContent;
+        return ps[ps.length - 1].innerHTML;
       });
-      data = `Искомое слово отсутствует. Похожие слова: ${proposalText}`;
-
-
+      queryResult = `Искомое слово отсутствует. Похожие слова: ${proposalText}`;
     } else {
-      data = queryAnswer;
+      const answerText = await page.evaluate(() => document.querySelector('h2').nextElementSibling.innerHTML);
+      queryResult = answerText;
     }
-    console.log(data);
-    //const targetDiv = await page.$$eval()
-    //document.querySelector('h2').nextElementSibling
-
-    //console.log(targetDiv.innerText);    
   } catch (error) {
-    console.log(`Can't open page ${pageURL}, got following error: ${error}`);
+    //console.log(`Can't open page ${pageURL}, got following error: ${error}`);
+    console.log(error);
   }
 
   await browser.close();
-
-  process.exit();
+  return queryResult;
 };
 
 
-ParseDictPage('дом книги');
+checkOrtho('впрокат').then(targetElement => {
+  //console.log(targetElement);
+  generateTextContent(targetElement);
+  process.exit();
+})
 
 //module.exports = ParseDictPage;

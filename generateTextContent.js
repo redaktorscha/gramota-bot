@@ -6,24 +6,31 @@ const accents = require('./accents');
 
 
 /**
- * @arg {string} str query result (HTML markup)
- * @returns {string} readable query result with accent marks
+ * @arg {string} str query result (contains HTML markup)
+ * @arg {boolean} received 
  */
-const generateTextContent = (str) => {
+const generateTextContent = (str, received) => {
+    let resultStr = str;
+    //console.log(resultStr);
 
-    const splitter = 'ent">';
+    if (received) {
+        const splitter = 'ent">';
 
-    const ar = str.split(splitter);
-    const resultStr = ar
-    .map(el => {
-        if (accents.includes(el[0])) {
-            let accentLetter = el[0];
-            accentLetter += '&#x301;';
+        const ar = str.split(splitter);
+        console.log(ar);
+        resultStr = ar
+            .map((el, i, _) => {
+                if (i > 0 && accents.includes(el[0])) {
+                    let accentLetter = el[0];
+                    accentLetter += '&#x301;';
+                    //accentLetter += '&#769';
 
-            el = accentLetter + el.slice(1);
-        }
-        return el;
-    }).join(splitter);
+                    el = accentLetter + el.slice(1);
+                }
+                return el;
+            }).join(splitter);
+    }
+
 
     // const fakeDom = document.createElement('div');
     // fakeDom.innerHTML = resultStr;
@@ -35,7 +42,7 @@ const generateTextContent = (str) => {
 
     const fakeDom = new JSDOM(`<div>${resultStr}</div>`);
     console.log(fakeDom.window.document.querySelector('div').textContent);
-    //return fakeDom.window.document.querySelector('div').textContent;
+    //return fakeDom.window.document.querySelector('div').textContent;  @returns {string} h-readable query result with accent marks
 }
 
 module.exports = generateTextContent;

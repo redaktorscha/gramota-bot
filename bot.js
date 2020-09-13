@@ -2,15 +2,21 @@ const puppeteer = require('puppeteer');
 const generateTextContent = require('./generateTextContent');
 
 /**
- * @arg {string} word word for check spelling and pronunciation
- * @returns {Promise} string (query results)
+ * @arg {string} word word for spelling and pronunciation check
+ * @returns {Promise} resolves string (query results)
  */
-const checkOrtho = async (word) => {
-
+const checkOrtho = async (word = '') => {
+  console.log(`Ищем '${word}'`);
+  const startTime = Date.now();
 
   let queryResult;
+  let isReceived = false;
+
   if (!word) {
-    return 'Пустой запрос.';
+    return {
+      queryResult: 'пустой запрос',
+      isReceived
+    };
   }
 
   const browser = await puppeteer.launch({
@@ -22,10 +28,6 @@ const checkOrtho = async (word) => {
 
   try {
     await page.goto(pageURL);
-    console.log(`Ищем '${word}'`);
-
-
-
 
     const textContent = await page.evaluate(() => {
       const header = document.querySelector('h2');
@@ -36,16 +38,21 @@ const checkOrtho = async (word) => {
     });
 
     if (!textContent) {
-      queryResult = 'Извините, слово не найдено.';
+      return {
+        queryResult: 'извините, слово не найдено',
+        isReceived
+      };
     } else if (textContent === 'Похожие слова:') {
+      isReceived = true;
 
       const proposalText = await page.evaluate(() => {
         const parentDiv = document.querySelector('.inside.block-content');
         const ps = parentDiv.querySelectorAll('p');
         return ps[ps.length - 1].innerHTML;
       });
-      queryResult = `Искомое слово отсутствует. Похожие слова: ${proposalText}`;
+      queryResult = `искомое слово отсутствует; похожие слова: ${proposalText}`;
     } else {
+      isReceived = true;
       const answerText = await page.evaluate(() => document.querySelector('h2').nextElementSibling.innerHTML);
       queryResult = answerText;
     }
@@ -55,14 +62,28 @@ const checkOrtho = async (word) => {
   }
 
   await browser.close();
-  return queryResult;
+  const endTime = Date.now();
+  if (endTime - startTime > 3000) {
+    queryResult += ',<br> простите за ожидание.'
+  }
+  return {
+    queryResult,
+    isReceived
+  };
 };
 
+//module.exports = checkOrtho;
 
-checkOrtho('впрокат').then(targetElement => {
+checkOrtho('корован').then(results => { //переместить это в main??
+  //console.log(results);
+  // if (!results) {
+  //   return;
+  // }
+  const {
+    queryResult,
+    isReceived
+  } = results;
   //console.log(targetElement);
-  generateTextContent(targetElement);
+  generateTextContent(queryResult, isReceived);
   process.exit();
-})
-
-//module.exports = ParseDictPage;
+}).catch(error => console.log(error))

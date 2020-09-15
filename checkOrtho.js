@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const generateTextContent = require('./generateTextContent');
 require('dotenv').config();
 
+
 /**
  * @arg {string} word word for spelling and pronunciation check
  * @returns {Promise} resolves string (query results)
@@ -81,18 +82,4 @@ const checkOrtho = async (word = '') => {
   };
 };
 
-//module.exports = checkOrtho;
-
-checkOrtho('корова123').then(results => { //переместить это в main??
-  //console.log(results);
-  // if (!results) {
-  //   return;
-  // }
-  const {
-    queryResult,
-    isReceived
-  } = results;
-  //console.log(targetElement);
-  generateTextContent(queryResult, isReceived);
-  process.exit();
-}).catch(error => console.log(error))
+module.exports = checkOrtho;

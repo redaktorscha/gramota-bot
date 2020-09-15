@@ -1,20 +1,28 @@
 const jsdom = require('jsdom');
-const { JSDOM } = jsdom;
+const {
+    JSDOM
+} = jsdom;
 const accents = require('./accents');
 
 
 /**
- * @arg {string} str query result (contains HTML markup)
- * @arg {boolean} received 
+ * @arg {Object {string, boolean}} results
+ * @returns {Promise} h-readable query result with accent marks
  */
-const generateTextContent = (str, received) => {
-    let resultStr = str;
+const generateTextContent = async (results) => {
+    //console.log(results);
+    const {
+        queryResult,
+        isReceived
+    } = results;
+
+    let resultStr = queryResult;
     //console.log(resultStr);
 
-    if (received) {
+    if (isReceived) {
         const splitter = 'ent">';
 
-        const ar = str.split(splitter);
+        const ar = queryResult.split(splitter);
         console.log(ar);
         resultStr = ar
             .map((el, i, _) => {
@@ -39,8 +47,8 @@ const generateTextContent = (str, received) => {
     //return resultStr;
 
     const fakeDom = new JSDOM(`<div>${resultStr}</div>`);
-    console.log(fakeDom.window.document.querySelector('div').textContent);
-    //return fakeDom.window.document.querySelector('div').textContent;  @returns {string} h-readable query result with accent marks
+    //console.log(fakeDom.window.document.querySelector('div').textContent);
+    return fakeDom.window.document.querySelector('div').textContent;
 }
 
 module.exports = generateTextContent;

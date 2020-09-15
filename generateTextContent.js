@@ -1,7 +1,5 @@
 const jsdom = require('jsdom');
-const {
-    JSDOM
-} = jsdom;
+const { JSDOM } = jsdom;
 const accents = require('./accents');
 
 

@@ -1,89 +1,30 @@
-const puppeteer = require('puppeteer');
-const generateTextContent = require('./generateTextContent');
+require('dotenv').config();
+const {
+    Telegraf
+} = require('telegraf');
 
-/**
- * @arg {string} word word for spelling and pronunciation check
- * @returns {Promise} resolves string (query results)
- */
-const checkOrtho = async (word = '') => {
-  console.log(`Ищем '${word}'`);
-  const startTime = Date.now();
+//const BOT_NAME = process.env.BOT_NAME;
+const BOT_TOKEN = process.env.BOT_TOKEN;
 
-  let queryResult;
-  let isReceived = false;
 
-  if (!word) {
-    return {
-      queryResult: 'пустой запрос',
-      isReceived
-    };
-  }
+const bot = new Telegraf(BOT_TOKEN);
 
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox'],
-    headless: true
-  });
-  const page = await browser.newPage();
-  const pageURL = `http://gramota.ru/slovari/dic/?word=${word}`;
+const {startText, helpText} = require('./botMsg');
 
-  try {
-    await page.goto(pageURL);
+// bot reply on command /start
+bot.start((ctx) => {
+    const userName = ctx.message.from.first_name;
+    ctx.reply(`Здравствуйте, ${userName}. ${startText}`)
+}); 
 
-    const textContent = await page.evaluate(() => {
-      const header = document.querySelector('h2');
-      if (header) {
-        return header.nextElementSibling.textContent;
-      }
-      return false;
-    });
 
-    if (!textContent) {
-      return {
-        queryResult: 'извините, слово не найдено',
-        isReceived
-      };
-    } else if (textContent === 'Похожие слова:') {
-      isReceived = true;
+// bot reply on command/help
+bot.help((ctx) => ctx.reply(`${helpText}`));
 
-      const proposalText = await page.evaluate(() => {
-        const parentDiv = document.querySelector('.inside.block-content');
-        const ps = parentDiv.querySelectorAll('p');
-        return ps[ps.length - 1].innerHTML;
-      });
-      queryResult = `искомое слово отсутствует; похожие слова: ${proposalText}`;
-    } else {
-      isReceived = true;
-      const answerText = await page.evaluate(() => document.querySelector('h2').nextElementSibling.innerHTML);
-      queryResult = answerText;
-    }
-  } catch (error) {
-    //console.log(`Can't open page ${pageURL}, got following error: ${error}`);
-    console.log(error);
-  }
+//bot echoes text
+bot.on('text', (ctx) => {
+    const text = ctx.message.text;
+    ctx.reply(text);
+}); 
 
-  await browser.close();
-  const endTime = Date.now();
-  if (endTime - startTime > 3000) {
-    queryResult += ',<br> простите за ожидание.'
-  }
-  return {
-    queryResult,
-    isReceived
-  };
-};
-
-//module.exports = checkOrtho;
-
-checkOrtho('корован').then(results => { //переместить это в main??
-  //console.log(results);
-  // if (!results) {
-  //   return;
-  // }
-  const {
-    queryResult,
-    isReceived
-  } = results;
-  //console.log(targetElement);
-  generateTextContent(queryResult, isReceived);
-  process.exit();
-}).catch(error => console.log(error))
+bot.launch() // запуск бота

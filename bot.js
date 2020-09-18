@@ -9,17 +9,17 @@ const {
 } = require('./botMsg');
 
 const bot = () => {
-    const BOT_TOKEN = process.env.BOT_TOKEN;
+    const BOT_TOKEN = process.env.BOT_TOKEN; 
     const bot = new Telegraf(BOT_TOKEN);
 
     //bot replies on command /start
-    bot.start((ctx) => {
+    bot.start((ctx) => {                        // ctx object holds the Update object from Telegram API
         const userName = ctx.message.from.first_name;
         ctx.reply(`Здравствуйте, ${userName}. ${startText}`)
     });
 
     //bot replies on command/help
-    bot.help((ctx) => ctx.reply(`${helpText}`));
+    bot.help((ctx) => ctx.replyWithHTML(`${helpText}`));
 
     //bot reacts on sticker
     bot.on('sticker', (ctx) => ctx.reply('🙂'));

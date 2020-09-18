@@ -1,13 +1,24 @@
 const checkOrtho = require('./checkOrtho');
 const generateTextContent = require('./generateTextContent');
+const writeToFile = require('./writeToFile');
+
 
 const main = async (query) => {
-    
-        const results = await checkOrtho(query).catch(err => console.log(err));
-        const answer = await generateTextContent(results).catch(err => console.log(err));
+    let answer;
 
-      
+    try {
+        const results = await checkOrtho(query);
+        answer = await generateTextContent(results);
+        return answer;
+
+    } catch (error) {
+        const date = new Date().toLocaleString();
+        writeToFile('./error-log', `${date}:${error}\n`);
+    }
+    
     return answer;
 }
 
-module.exports = main;
+main('м');
+
+//module.exports = main;

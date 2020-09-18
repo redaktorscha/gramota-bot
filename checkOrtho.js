@@ -1,12 +1,13 @@
 
 const puppeteer = require('puppeteer');
-const generateTextContent = require('./generateTextContent');
 require('dotenv').config();
+const writeToFile = require('./writeToFile');
+
 
 
 /**
  * @arg {string} word word for spelling and pronunciation check
- * @returns {Promise} resolves string (query results)
+ * @returns {Promise} resolves query results
  */
 const checkOrtho = async (word = '') => {
   word = word.trim();
@@ -17,6 +18,7 @@ const checkOrtho = async (word = '') => {
 
   let queryResult;
   let isReceived = false;
+  let wasWaiting = false;
 
   if (!word || regex.test(word)) {
     return {
@@ -34,7 +36,7 @@ const checkOrtho = async (word = '') => {
   //console.log(GRAMOTA_URL);
 
   const pageURL = `${process.env.GRAMOTA_URL}${word}`;
-  console.log(pageURL);
+  //console.log(pageURL);
 
   try {
     await page.goto(pageURL);
@@ -67,18 +69,24 @@ const checkOrtho = async (word = '') => {
       queryResult = answerText;
     }
   } catch (error) {
-    //console.log(`Can't open page ${pageURL}, got following error: ${error}`);
+   
     console.log(error);
+    const date = new Date().toLocaleString();
+    writeToFile('./error-log', `${date}:${error}\n`);
   }
 
   await browser.close();
   const endTime = Date.now();
+
   if (endTime - startTime > 3000) {
-    queryResult += '; простите за ожидание.'
+    //queryResult += '; простите за ожидание.'
+    wasWaiting = true;
   }
+
   return {
     queryResult,
-    isReceived
+    isReceived,
+    wasWaiting
   };
 };
 

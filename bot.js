@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
+const Extra = require('telegraf/extra');
 
 const main = require('./main');
 
@@ -8,7 +9,7 @@ const {
     helpText
 } = require('./botMsg');
 
-const bot = () => {
+const bot = () => { 
     const BOT_TOKEN = process.env.BOT_TOKEN; 
     const bot = new Telegraf(BOT_TOKEN);
 
@@ -18,8 +19,8 @@ const bot = () => {
         ctx.reply(`Здравствуйте, ${userName}. ${startText}`)
     });
 
-    //bot replies on command/help
-    bot.help((ctx) => ctx.replyWithHTML(`${helpText}`));
+    //bot replies on command/help 
+    bot.help((ctx) => ctx.reply(`${helpText}`, Extra.HTML())); //using html-markup
 
     //bot reacts on sticker
     bot.on('sticker', (ctx) => ctx.reply('🙂'));
@@ -31,9 +32,6 @@ const bot = () => {
         const results = await main(text);
         console.log(results);
         await ctx.reply(results);
-        
-
-        //ctx.reply(answer);
     });
 
     bot.launch() // запуск бота

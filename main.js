@@ -19,6 +19,6 @@ const main = async (query) => {
     return answer;
 }
 
-main('м');
 
-//module.exports = main;
+
+module.exports = main;

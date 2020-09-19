@@ -6,19 +6,17 @@ const accents = require('./accents');
 
 
 /**
- * @arg {Object {string, boolean, boolean}} results
+ * @arg {Object} results
  * @returns {Promise} h-readable query result with accent marks
  */
 const generateTextContent = async (results) => {
-    //console.log(results);
+   
     const {
         queryResult,
         isReceived,
         wasWaiting
     } = results;
 
-    
-    //console.log(queryResult);
 
     let resultStr = queryResult;
     
@@ -38,14 +36,12 @@ const generateTextContent = async (results) => {
         const splitter = 'ent">'; //letters with accent marks got css class 'accent'
 
         const ar = str.split(splitter);
-        //console.log(ar);
 
         resultStr = ar
             .map((el, i, _) => {
                 if (i > 0 && accents.includes(el[0])) {
                     let accentLetter = el[0];
                     accentLetter += '&#x301;';
-                    //accentLetter += '&#769';
 
                     el = accentLetter + el.slice(1);
                 }
@@ -57,7 +53,7 @@ const generateTextContent = async (results) => {
     }
 
     const fakeDom = new JSDOM(`<div>${resultStr}</div>`);
-    //console.log(fakeDom.window.document.querySelector('div').textContent);
+    
     return fakeDom.window.document.querySelector('div').textContent;
 }
 

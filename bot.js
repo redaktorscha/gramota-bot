@@ -4,10 +4,14 @@ const Extra = require('telegraf/extra');
 
 const main = require('./main');
 
+const writeToFile = require('./writeToFile');
+
 const {
     startText,
     helpText
 } = require('./botMsg');
+
+
 
 const bot = () => { 
     const BOT_TOKEN = process.env.BOT_TOKEN; 
@@ -19,7 +23,7 @@ const bot = () => {
         ctx.reply(`Здравствуйте, ${userName}. ${startText}`)
     });
 
-    //bot replies on command/help 
+    //bot replies on command /help 
     bot.help((ctx) => ctx.reply(`${helpText}`, Extra.HTML())); //using html-markup
 
     //bot reacts on sticker
@@ -27,14 +31,23 @@ const bot = () => {
 
     //bot does spell checking
     bot.on('text', async (ctx) => {
+       
         const text = ctx.message.text;
-        //console.log(text);
+
         const results = await main(text);
-        console.log(results);
+        
         await ctx.reply(results);
     });
 
-    bot.launch() // запуск бота
+    //bot onerror
+    bot.catch((err, ctx) => {
+        console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+        const date = new Date().toLocaleString();
+        writeToFile('./error-log', `${date}:${err}\n`);
+        ctx.reply('Кажется, я сломался. Зайдите позже, пожалуйста.');
+      })
+
+    bot.launch() //start bot
 
 }
 

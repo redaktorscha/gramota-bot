@@ -1,4 +1,3 @@
-
 const puppeteer = require('puppeteer');
 require('dotenv').config();
 const writeToFile = require('./writeToFile');
@@ -7,13 +6,12 @@ const writeToFile = require('./writeToFile');
 
 /**
  * @arg {string} word word for spelling and pronunciation check
- * @returns {Promise} resolves query results
+ * @returns {Promise} resolves query results(html)
  */
 const checkOrtho = async (word = '') => {
-  word = word.trim();
+
   const regex = /[a-z]|[A-Z]|[0-9]/;
 
-  console.log(`Ищу '${word}'`);
   const startTime = Date.now();
 
   let queryResult;
@@ -22,21 +20,20 @@ const checkOrtho = async (word = '') => {
 
   if (!word || regex.test(word)) {
     return {
-      queryResult: 'пустой или некорректный запрос',
+      queryResult: 'некорректный запрос',
       isReceived
     };
   }
 
-  const browser = await puppeteer.launch({
+  const browser = await puppeteer.launch({ // web-scraping via puppeteer lib
     args: ['--no-sandbox'],
     headless: true
   });
   const page = await browser.newPage();
-  //const GRAMOTA_URL = process.env.GRAMOTA_URL;
-  //console.log(GRAMOTA_URL);
+
 
   const pageURL = `${process.env.GRAMOTA_URL}${word}`;
-  //console.log(pageURL);
+
 
   try {
     await page.goto(pageURL);
@@ -44,33 +41,42 @@ const checkOrtho = async (word = '') => {
     const textContent = await page.evaluate(() => {
       const header = document.querySelector('h2');
       if (header) {
+
         return header.nextElementSibling.textContent;
       }
       return false;
     });
 
+
     if (!textContent) {
       return {
-        queryResult: 'извините, слово не найдено',//???
+        queryResult: 'извините, слово не найдено',
         isReceived
       };
-    } else if (textContent === 'Похожие слова:') {
-      isReceived = true;
-
+    } else if (textContent === 'Похожие слова:') { // if found something similar but not the word given
       const proposalText = await page.evaluate(() => {
         const parentDiv = document.querySelector('.inside.block-content');
         const ps = parentDiv.querySelectorAll('p');
+        if (!ps[ps.length - 1].textContent) {
+          return '';
+        };
         return ps[ps.length - 1].innerHTML;
       });
-      queryResult = `искомое слово отсутствует; похожие слова: ${proposalText}`;
+
+      if (proposalText) {
+        isReceived = true;
+        queryResult = `искомое слово отсутствует; похожие слова: ${proposalText}`;
+      } else {
+        queryResult = 'извините, слово не найдено';
+      }
+
     } else {
       isReceived = true;
       const answerText = await page.evaluate(() => document.querySelector('h2').nextElementSibling.innerHTML);
       queryResult = answerText;
     }
   } catch (error) {
-   
-    console.log(error);
+
     const date = new Date().toLocaleString();
     writeToFile('./error-log', `${date}:${error}\n`);
   }
@@ -79,7 +85,6 @@ const checkOrtho = async (word = '') => {
   const endTime = Date.now();
 
   if (endTime - startTime > 3000) {
-    //queryResult += '; простите за ожидание.'
     wasWaiting = true;
   }
 

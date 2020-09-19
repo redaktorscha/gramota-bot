@@ -2,12 +2,15 @@ const checkOrtho = require('./checkOrtho');
 const generateTextContent = require('./generateTextContent');
 const writeToFile = require('./writeToFile');
 
-
+/**
+ * @arg {string} word word for spelling and pronunciation check from user
+ * @returns {Promise} resolves readable query results (string)
+ */
 const main = async (query) => {
     let answer;
 
     try {
-        const results = await checkOrtho(query);
+        const results = await checkOrtho(query);        
         answer = await generateTextContent(results);
         return answer;
 

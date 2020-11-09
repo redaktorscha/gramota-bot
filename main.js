@@ -1,27 +1,66 @@
-const checkOrtho = require('./checkOrtho');
-const generateTextContent = require('./generateTextContent');
-const writeToFile = require('./writeToFile');
+/** 
+ * @module ./main
+ */
+
+require('dotenv').config();
+const {
+    Telegraf
+} = require('telegraf');
+const Extra = require('telegraf/extra');
+
+const generateBotReply = require('./generateBotReply');
+const fs = require('fs');
+const botMsg = require('./botMsg');
 
 /**
- * @arg {string} word word for spelling and pronunciation check from user
- * @returns {Promise} resolves readable query results (string)
+ * main entry point, initializes and launches the bot
  */
-const main = async (query) => {
-    let answer;
+const main = () => {
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+    const bot = new Telegraf(BOT_TOKEN);
 
-    try {
-        const results = await checkOrtho(query);        
-        answer = await generateTextContent(results);
-        return answer;
 
-    } catch (error) {
+    const {        
+        helpText,
+        smile,
+        errors: {
+            errorBotText
+        }
+    } = botMsg;
+
+    //bot replies on command /start
+    bot.start((ctx) => { // ctx object holds the Update object from Telegram API
+        const userName = ctx.message.from.first_name;
+        botMsg.startText = userName;
+        ctx.reply(`${botMsg.startText}`)
+    });
+
+    //bot replies on command /help 
+    bot.help((ctx) => ctx.reply(`${helpText}`, Extra.HTML())); //using html-markup
+
+    //bot reacts on sticker
+    bot.on('sticker', (ctx) => ctx.reply(`${smile}`));
+
+    //bot does spell checking
+    bot.on('text', async (ctx) => {
+
+        const result = await generateBotReply(ctx.message.text);
+
+        await ctx.reply(result);
+    });
+
+    //bot onerror
+    bot.catch((err, ctx) => {
+        console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
         const date = new Date().toLocaleString();
-        writeToFile('./error-log', `${date}:${error}\n`);
-    }
-    
-    return answer;
+        fs.appendFileSync('./error-log', `${date}:${error}\n`);
+        ctx.reply(`${errorBotText}`);
+    })
+
+    bot.launch(); //start bot
+
 }
 
 
 
-module.exports = main;
+main();

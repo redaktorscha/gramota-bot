@@ -1,0 +1,9 @@
+*workspace
+node_modules/
+crawl
+accentHash.js
+alphabeth.js
+abbr
+.env
+botAva.jpg
+error-log

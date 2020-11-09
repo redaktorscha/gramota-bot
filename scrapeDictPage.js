@@ -1,29 +1,35 @@
+/** 
+ * @module ./scrapeDictPage
+ */
 const puppeteer = require('puppeteer');
 require('dotenv').config();
-const writeToFile = require('./writeToFile');
-
+const fs = require('fs');
+const similarWords = require('./similarWords');
+const botMsg = require('./botMsg');
 
 
 /**
- * @arg {string} word word for spelling and pronunciation check
- * @returns {Promise} resolves query results(html)
+ * @typedef Result
+ * @property {string} queryResult - query result (html) or answer text (if not found or incorrect)
+ * @property {boolean} isReceived - true if the word was found
+ * @property {boolean} wasWaiting - true if searching took more than 3 sec
+ * @param {string} word - word for spelling and pronunciation check
+ * @returns {Promise<Result>} - resolves query result
  */
-const checkOrtho = async (word = '') => {
+const scrapeDictPage = async (word = '') => {
 
-  const regex = /[a-z]|[A-Z]|[0-9]/;
+  const {
+    searching: {
+      notFound,
+      foundSimilar
+    }
+  } = botMsg;
 
   const startTime = Date.now();
 
-  let queryResult;
+  let queryResult = '';
   let isReceived = false;
   let wasWaiting = false;
-
-  if (!word || regex.test(word)) {
-    return {
-      queryResult: 'некорректный запрос',
-      isReceived
-    };
-  }
 
   const browser = await puppeteer.launch({ // web-scraping via puppeteer lib
     args: ['--no-sandbox'],
@@ -34,14 +40,13 @@ const checkOrtho = async (word = '') => {
 
   const pageURL = `${process.env.GRAMOTA_URL}${word}`;
 
-
   try {
+    
     await page.goto(pageURL);
 
     const textContent = await page.evaluate(() => {
       const header = document.querySelector('h2');
       if (header) {
-
         return header.nextElementSibling.textContent;
       }
       return false;
@@ -50,10 +55,10 @@ const checkOrtho = async (word = '') => {
 
     if (!textContent) {
       return {
-        queryResult: 'извините, слово не найдено',
+        queryResult: `${notFound}`,
         isReceived
       };
-    } else if (textContent === 'Похожие слова:') { // if found something similar but not the word given
+    } else if (textContent === `${similarWords}`) { // if found something similar but not the word given
       const proposalText = await page.evaluate(() => {
         const parentDiv = document.querySelector('.inside.block-content');
         const ps = parentDiv.querySelectorAll('p');
@@ -65,9 +70,9 @@ const checkOrtho = async (word = '') => {
 
       if (proposalText) {
         isReceived = true;
-        queryResult = `искомое слово отсутствует; похожие слова: ${proposalText}`;
+        queryResult = `${foundSimilar} ${proposalText}`;
       } else {
-        queryResult = 'извините, слово не найдено';
+        queryResult = `${notFound}`;
       }
 
     } else {
@@ -78,7 +83,7 @@ const checkOrtho = async (word = '') => {
   } catch (error) {
 
     const date = new Date().toLocaleString();
-    writeToFile('./error-log', `${date}:${error}\n`);
+    fs.appendFileSync('./error-log', `${date}:${error}\n`);
   }
 
   await browser.close();
@@ -87,6 +92,7 @@ const checkOrtho = async (word = '') => {
   if (endTime - startTime > 3000) {
     wasWaiting = true;
   }
+  
 
   return {
     queryResult,
@@ -95,4 +101,4 @@ const checkOrtho = async (word = '') => {
   };
 };
 
-module.exports = checkOrtho;
+module.exports = scrapeDictPage;
